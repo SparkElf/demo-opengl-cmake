@@ -18,15 +18,21 @@ set(PKG_DIR D:/software/cmakeCache)
 set(GLFW_LIB ${PKG_DIR}/glfw-3.3.5/lib-vc2019/glfw3.lib)
 set(GLFW_INCLUDE ${PKG_DIR}/glfw-3.3.5/include)
 # GLAD
-add_subdirectory(${PKG_DIR}/glad/ build)
-
+add_subdirectory(${PKG_DIR}/glad/ build/glad)
+# stb_image
+add_subdirectory(${PKG_DIR}/stb_image/ build/stb_image)
+# GLM
+set(GLM_INCLUDE ${PKG_DIR}/glm-0.9.8.5/glm)
 
 # merge includes
+list(APPEND INCLUDES ./)
 list(APPEND INCLUDES ${GLFW_INCLUDE})
+list(APPEND INCLUDES ${GLM_INCLUDE})
 include_directories(${INCLUDES})
 
 # merge libs
 list(APPEND LIBS ${GLFW_LIB})
 list(APPEND LIBS glad)
+list(APPEND LIBS stb_image)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBS})
 

@@ -5,6 +5,7 @@ using namespace std;
 class Exception{
     string info; 
 public:
+    Exception(){}
     Exception(string info):info(info){}
     Exception(string info,bool doPrint){
         this->info=info;

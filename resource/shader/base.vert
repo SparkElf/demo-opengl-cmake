@@ -1,7 +1,14 @@
 #version 330 core
 
-layout(location=0) in vec3 pos;
+layout(location=0) in vec3 vPos;
+layout(location=1) in vec2 vTexPos;
+
+out vec2 texPos;
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
 
 void main(){
-    gl_Position=vec4(pos.x,pos.y,pos.z,1.0);
+    gl_Position = projection * view * model * vec4(vPos, 1.0);
+    texPos=vTexPos;
 }
