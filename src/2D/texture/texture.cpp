@@ -1,9 +1,10 @@
 #pragma once
 #include <string>
-#include <stb_image.h>
 #include <glad/glad.h>
 #include <format>
+#include <stb_image.h>
 #include "util/exception.cpp"
+
 typedef unsigned int uint;
 struct Texture {
 public:
@@ -24,7 +25,6 @@ public:
         
         if(img_data==NULL)
             cout<<format("texture {} load failed",path)<<endl;
-        
         // 2. 生成 texture object, 请使用tex_id
         glGenTextures(1 , &fd);
         // 3. 绑定当前纹理

@@ -2,16 +2,18 @@
 #include <glad/glad.h>
 #include <fstream>
 #include <format>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/glm.hpp>
 #include "util/exception.cpp"
 using namespace std;
-
+using namespace glm;
 typedef unsigned int uint;
 
 //着色器管线，包含多个shader
 class Shaders{
     public:
     uint fd;
-    
+    mat4 model,view,projection;
     Shaders(){
         fd=glCreateProgram();
     }
@@ -61,8 +63,32 @@ class Shaders{
             
         glDeleteShader(shader_fd);
     }
-    void setModel(){
-        
+    void setModel(mat4 &model){
+        use();
+        glUniformMatrix4fv(glGetUniformLocation(fd,"model"), 1, GL_FALSE, value_ptr(model));
+        this->model=model;
     }
-
+    void setView(mat4 &view){
+        use();
+        glUniformMatrix4fv(glGetUniformLocation(fd,"view"), 1, GL_FALSE, value_ptr(view));
+        this->view=view;
+    }
+    void setProjection(mat4 &projection){
+        use();
+        glUniformMatrix4fv(glGetUniformLocation(fd,"projection"), 1, GL_FALSE, value_ptr(projection));
+        this->projection=projection;
+    }
+    void setBool(const char* name,bool &value){
+        use();
+        glUniform1i(glGetUniformLocation(fd,name),value);
+    }
+    void setMVP(mat4&model,mat4&view,mat4&projection){
+        use();
+        glUniformMatrix4fv(glGetUniformLocation(fd,"model"), 1, GL_FALSE, value_ptr(model));
+        glUniformMatrix4fv(glGetUniformLocation(fd,"view"), 1, GL_FALSE, value_ptr(view));
+        glUniformMatrix4fv(glGetUniformLocation(fd,"projection"), 1, GL_FALSE, value_ptr(projection));
+        this->model=model;
+        this->view=view;
+        this->projection=projection;
+    }
 };
