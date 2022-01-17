@@ -1,3 +1,4 @@
+#pragma once
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
@@ -16,88 +17,11 @@ using namespace std;
 using namespace glm;
 namespace fs = std::filesystem;
 
-
-
 constexpr int screenWidth = 640 , screenHeight = 480;
-float fov = 45.0f;
-float lastX = screenWidth / 2.0f , lastY = screenHeight / 2.0f;
-float yawAngle = -90.0f , pitchAngle = 0.0f;//yaw一开始是-90度的，因为0度看向x轴正方向，我们应该看向z轴负方向
+
 Camera camera = Camera(vec3(0.0f , 0.0f , 3.0f) , vec3(0.0f , 0.0f , -1.0f) , vec3(0.0f , 1.0f , 0.0f));//z轴正方向沿屏幕向外
-float lastTime=0.0f;
-float deltaTime=0.0f;
-enum class ShapeEnum {
-	Triangle = 0 , Quad = 1 , Cube = 2 , Cubes = 3
-};
-ShapeEnum curShape = ShapeEnum::Triangle;
-void key_callback(GLFWwindow* window , int key , int scancode , int action , int mods)
-{
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-		glfwSetWindowShouldClose(window , true);
-	if (key == GLFW_KEY_P && action == GLFW_PRESS) {
-		int mode[2];
-		glGetIntegerv(GL_POLYGON_MODE , mode);
-		switch (mode[0]) {
-		case GL_FILL:
-			glPolygonMode(GL_FRONT_AND_BACK , GL_LINE);
-			break;
-		case GL_LINE:
-			glPolygonMode(GL_FRONT_AND_BACK , GL_FILL);
-			break;
-		}
-	}
-	if (key >= 320 && key <= 323 && action == GLFW_PRESS) {
-		curShape = ShapeEnum(key - 320);
-	}
-	camera.speed=2.5f*deltaTime;
-	if (glfwGetKey(window , GLFW_KEY_W) == GLFW_PRESS)
-		camera.pos += camera.speed * camera.targetPos;
-	if (glfwGetKey(window , GLFW_KEY_S) == GLFW_PRESS)
-		camera.pos -= camera.speed * camera.targetPos;
-	if (glfwGetKey(window , GLFW_KEY_A) == GLFW_PRESS)
-		camera.pos -= normalize(cross(camera.targetPos , camera.up)) * camera.speed;//前向量叉乘上向量得到的是右向量，注意要进行归一化否则不同情况下向右的速度可能会不同。
-	if (glfwGetKey(window , GLFW_KEY_D) == GLFW_PRESS)
-		camera.pos += normalize(cross(camera.targetPos , camera.up)) * camera.speed;
-}
-void scroll_callback(GLFWwindow* window , double xoffset , double yoffset) {
-	fov -= (float)yoffset;
-	if (fov < 1.0f)
-		fov = 1.0f;
-	if (fov > 45.0f)
-		fov = 45.0;
-}
-bool firstMouse = true;
-void mouse_callback(GLFWwindow* window , double xpos , double ypos) {
-	if (firstMouse) // 这个bool变量初始时是设定为true的
-	{
-		lastX = xpos;
-		lastY = ypos;
-		firstMouse = false;
-		cout<<"fist"<<endl;
-	}
-	float xoffset = xpos - lastX;
-	float yoffset = lastY - ypos;//原点在左下角
-	lastX = xpos;
-	lastY = ypos;
 
-	float sensitivity = 0.05f;
-	xoffset *= sensitivity;
-	yoffset *= sensitivity;
 
-	yawAngle += xoffset;//相机转角
-	pitchAngle += yoffset;
-	cout<<"pitchAngle: "<<pitchAngle<<" yawAngle: "<<yawAngle<<endl;
-	if (pitchAngle > 89.0f)//最多看到头顶的天空，不允许头反向
-		pitchAngle = 89.0f;
-	if (pitchAngle < -89.0f)
-		pitchAngle = -89.0f;
-
-	vec3 front;
-	front.x = cos(radians(pitchAngle)) * cos(radians(yawAngle));
-	front.y = sin(radians(pitchAngle));
-	front.z = cos(radians(pitchAngle)) * sin(radians(yawAngle));
-	camera.targetPos = glm::normalize(front);
-	cout<<to_string(camera.targetPos)<<endl;
-}
 int main() {
 	glfwInit();
 	GLFWwindow* window = glfwCreateWindow(screenWidth , screenHeight , "Demo" , NULL , NULL);
@@ -171,14 +95,12 @@ int main() {
 	//开启深度测试
 	glEnable(GL_DEPTH_TEST);
 	//触发并提交事件到队列
-	glfwSetKeyCallback(window , key_callback);//鼠标键盘事件
-	glfwSetScrollCallback(window , scroll_callback);//鼠标滚轮事件
-	glfwSetCursorPosCallback(window , mouse_callback);
+	glfwSetKeyCallback(window ,[](GLFWwindow* window , int key , int scancode , int action , int mods){ camera.key_callback(window,key,scancode,action,mods);});//鼠标键盘事件
+	glfwSetScrollCallback(window ,[](GLFWwindow* window , double xoffset , double yoffset){ camera.scroll_callback(window,xoffset,yoffset);});//鼠标滚轮事件
+	glfwSetCursorPosCallback(window ,[](GLFWwindow* window , double xpos , double ypos){ camera.mouse_callback(window,xpos,ypos);});
 	while (!glfwWindowShouldClose(window)) {//如果窗口未关闭则执行程序
 		//更新全局时钟
-		float currentTime= glfwGetTime();
-		deltaTime = currentTime - lastTime;
-		lastTime = currentTime;	
+		camera.updateTime();
 		//隐藏鼠标并开启鼠标事件
 		glfwSetInputMode(window , GLFW_CURSOR , GLFW_CURSOR_DISABLED);
 
@@ -191,20 +113,20 @@ int main() {
 		model = rotate(model , radians(50.0f) / 60 , vec3(0.5f , 1.0f , 0.0f));
 		camera.updateView();
 		view = camera.getView();
-		projection = perspective(radians(fov) , 1.0f * screenWidth / screenHeight , 0.1f , 100.0f);
+		projection = perspective(radians(camera.fov) , 1.0f * screenWidth / screenHeight , 0.1f , 100.0f);
 		Model* mo = NULL;
-		switch (curShape)
+		switch (camera.curScene)
 		{
-		case ShapeEnum::Triangle:
+		case SceneEnum::Triangle:
 			mo = &triangle;
 			break;
-		case ShapeEnum::Quad:
+		case SceneEnum::Quad:
 			mo = &quad;
 			break;
-		case ShapeEnum::Cube:
+		case SceneEnum::Cube:
 			mo = &cube;
 			break;
-		case ShapeEnum::Cubes:
+		case SceneEnum::Cubes:
 			for (int i = 0; i < 10; i++)
 			{
 				mat4 m = rotate(cubes[i].shader->model , radians(50.0f) / 60.0f , vec3(1.0f , 0.3f , 0.5f));
@@ -215,7 +137,7 @@ int main() {
 		default:
 			break;
 		}
-		if (curShape < ShapeEnum::Cubes) {
+		if (camera.curScene < SceneEnum::Cubes) {
 			mo->shader->setMVP(model , view , projection);
 			mo->draw();
 		}
